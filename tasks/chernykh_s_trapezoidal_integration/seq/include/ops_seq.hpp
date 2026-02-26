@@ -1,9 +1,11 @@
 #pragma once
-#include <vector>
+#include <cstddef>
 #include <functional>
 #include <utility>
-#include "task/include/task.hpp"
+#include <vector>
+
 #include "chernykh_s_trapezoidal_integration/common/include/common.hpp"
+#include "task/include/task.hpp"
 namespace chernykh_s_trapezoidal_integration {
 
 

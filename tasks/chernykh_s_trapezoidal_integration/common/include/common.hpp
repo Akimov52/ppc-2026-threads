@@ -1,10 +1,10 @@
 #pragma once
 
+#include <functional>
 #include <string>
 #include <tuple>
-#include <vector>
-#include <functional>
 #include <utility>
+#include <vector>
 
 #include "task/include/task.hpp"
 
