@@ -123,7 +123,6 @@ bool TitaevSortirovkaBetcheraSEQ::RunImpl() {
   auto &input = GetInput();
   const size_t n = input.size();
   if (n <= 1) {
-    GetOutput() = input;
     return true;
   }
 
