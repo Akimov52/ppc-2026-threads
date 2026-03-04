@@ -27,8 +27,11 @@ class MorozovaSStrassenMultiplicationFuncTests : public ppc::util::BaseRunFuncTe
   }
 
   bool CheckTestOutputData(OutType &output_data) final {
-    if (test_number_ == 6 || test_number_ == 7) {
-      return true;
+    if (test_number_ == 6) {
+      return output_data.empty() || (output_data.size() == 1 && output_data[0] == 0.0);
+    }
+    if (test_number_ == 7) {
+      return output_data.empty() || (output_data.size() == 1 && output_data[0] == 0.0);
     }
     return ValidateMultiplicationResult(output_data);
   }
@@ -133,11 +136,25 @@ class MorozovaSStrassenMultiplicationFuncTests : public ppc::util::BaseRunFuncTe
 
   bool ValidateMultiplicationResult(OutType &output_data) {
     int n = static_cast<int>(input_data_[0]);
+
+    if (n <= 0) {
+      return false;
+    }
+
+    size_t expected_size = 1 + 2 * static_cast<size_t>(n) * static_cast<size_t>(n);
+    if (input_data_.size() != expected_size) {
+      return false;
+    }
+
     Matrix a = ExtractMatrixA(n);
     Matrix b = ExtractMatrixB(n);
     Matrix expected = ComputeExpectedResult(a, b);
 
     if (output_data.empty() || static_cast<int>(output_data[0]) != n) {
+      return false;
+    }
+
+    if (output_data.size() != 1 + static_cast<size_t>(n) * static_cast<size_t>(n)) {
       return false;
     }
 
