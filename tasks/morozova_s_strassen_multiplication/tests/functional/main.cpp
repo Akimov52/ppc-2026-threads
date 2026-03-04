@@ -28,10 +28,10 @@ class MorozovaSStrassenMultiplicationFuncTests : public ppc::util::BaseRunFuncTe
 
   bool CheckTestOutputData(OutType &output_data) final {
     if (test_number_ == 6) {
-      return output_data.empty() || (output_data.size() == 1 && output_data[0] == 0.0);
+      return output_data.empty();
     }
     if (test_number_ == 7) {
-      return output_data.empty() || (output_data.size() == 1 && output_data[0] == 0.0);
+      return output_data.empty();
     }
     return ValidateMultiplicationResult(output_data);
   }
@@ -126,7 +126,7 @@ class MorozovaSStrassenMultiplicationFuncTests : public ppc::util::BaseRunFuncTe
     }
   }
 
-  void AddWeightedMatrix(int n, std::function<double(int, int)> weight_func) {
+  void AddWeightedMatrix(int n, const std::function<double(int, int)> &weight_func) {
     for (int i = 0; i < n; ++i) {
       for (int j = 0; j < n; ++j) {
         input_data_.push_back(weight_func(i, j));
@@ -134,14 +134,14 @@ class MorozovaSStrassenMultiplicationFuncTests : public ppc::util::BaseRunFuncTe
     }
   }
 
-  bool ValidateMultiplicationResult(OutType &output_data) {
+  [[nodiscard]] bool ValidateMultiplicationResult(OutType &output_data) {
     int n = static_cast<int>(input_data_[0]);
 
     if (n <= 0) {
       return false;
     }
 
-    size_t expected_size = 1 + 2 * static_cast<size_t>(n) * static_cast<size_t>(n);
+    size_t expected_size = 1 + (2 * static_cast<size_t>(n) * static_cast<size_t>(n));
     if (input_data_.size() != expected_size) {
       return false;
     }
@@ -154,14 +154,15 @@ class MorozovaSStrassenMultiplicationFuncTests : public ppc::util::BaseRunFuncTe
       return false;
     }
 
-    if (output_data.size() != 1 + static_cast<size_t>(n) * static_cast<size_t>(n)) {
+    size_t output_expected_size = 1 + (static_cast<size_t>(n) * static_cast<size_t>(n));
+    if (output_data.size() != output_expected_size) {
       return false;
     }
 
     return CompareMatrices(output_data, expected, n);
   }
 
-  Matrix ExtractMatrixA(int n) const {
+  [[nodiscard]] Matrix ExtractMatrixA(int n) const {
     Matrix a(n);
     int idx = 1;
     for (int i = 0; i < n; ++i) {
@@ -172,9 +173,9 @@ class MorozovaSStrassenMultiplicationFuncTests : public ppc::util::BaseRunFuncTe
     return a;
   }
 
-  Matrix ExtractMatrixB(int n) const {
+  [[nodiscard]] Matrix ExtractMatrixB(int n) const {
     Matrix b(n);
-    int idx = 1 + n * n;
+    int idx = 1 + (n * n);
     for (int i = 0; i < n; ++i) {
       for (int j = 0; j < n; ++j) {
         b(i, j) = input_data_[idx++];
@@ -183,7 +184,7 @@ class MorozovaSStrassenMultiplicationFuncTests : public ppc::util::BaseRunFuncTe
     return b;
   }
 
-  Matrix ComputeExpectedResult(const Matrix &a, const Matrix &b) const {
+  static [[nodiscard]] Matrix ComputeExpectedResult(const Matrix &a, const Matrix &b) {
     int n = a.size;
     Matrix expected(n);
     for (int i = 0; i < n; ++i) {
@@ -198,7 +199,7 @@ class MorozovaSStrassenMultiplicationFuncTests : public ppc::util::BaseRunFuncTe
     return expected;
   }
 
-  bool CompareMatrices(const OutType &output_data, const Matrix &expected, int n) const {
+  static [[nodiscard]] bool CompareMatrices(const OutType &output_data, const Matrix &expected, int n) {
     const double eps = 1e-6;
     for (int i = 0; i < n; ++i) {
       for (int j = 0; j < n; ++j) {

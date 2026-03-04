@@ -96,11 +96,14 @@ bool MorozovaSStrassenMultiplicationSEQ::ValidationImpl() {
   if (GetInput().empty()) {
     return false;
   }
+
   int n = static_cast<int>(GetInput()[0]);
   if (n <= 0) {
     return false;
   }
+
   size_t expected_size = 1 + (2 * static_cast<size_t>(n) * static_cast<size_t>(n));
+
   return GetInput().size() == expected_size;
 }
 
