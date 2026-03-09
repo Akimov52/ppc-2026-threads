@@ -4,8 +4,8 @@
 #include <cmath>
 
 #include "lukin_i_ench_contr_lin_hist/common/include/common.hpp"
-#include "lukin_i_ench_contr_lin_hist/seq/include/ops_seq.hpp"
 #include "lukin_i_ench_contr_lin_hist/omp/include/ops_omp.hpp"
+#include "lukin_i_ench_contr_lin_hist/seq/include/ops_seq.hpp"
 #include "util/include/perf_test_util.hpp"
 
 namespace lukin_i_ench_contr_lin_hist {
