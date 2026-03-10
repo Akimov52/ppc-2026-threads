@@ -69,7 +69,6 @@ bool RedkinaAIntegralSimpsonOMP::RunImpl() {
 
   // Создаём локальные копии ссылок на данные класса для использования в OpenMP
   const std::vector<double> &a_ref = a_;
-  const std::vector<double> &b_ref = b_;
   const std::vector<int> &n_ref = n_;
   const std::vector<double> &h_ref = h;
   const std::function<double(const std::vector<double> &)> &func_ref = func_;
@@ -77,7 +76,7 @@ bool RedkinaAIntegralSimpsonOMP::RunImpl() {
   const index_t total_nodes_val = total_nodes;
 
 // Распараллеливание: каждый поток создаёт свои локальные векторы один раз
-#pragma omp parallel default(none) shared(a_ref, b_ref, n_ref, h_ref, func_ref, dim_val, total_nodes_val) \
+#pragma omp parallel default(none) shared(a_ref, n_ref, h_ref, func_ref, dim_val, total_nodes_val) \
     reduction(+ : global_sum)
   {
     // Локальные для потока векторы (переиспользуются на всех итерациях потока)
