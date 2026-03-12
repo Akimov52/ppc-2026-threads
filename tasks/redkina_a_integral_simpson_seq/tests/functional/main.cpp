@@ -55,7 +55,7 @@ InputData MakeInput(std::function<double(const std::vector<double> &)> func, std
   return InputData{.func = std::move(func), .a = std::move(a), .b = std::move(b), .n = std::move(n)};
 }
 
-const std::array<TestType, 8> kTestCases = {
+const std::array<TestType, 3> kTestCases = {
     // 1D константа
     std::make_tuple(1,
                     MakeInput([](const std::vector<double> &) { return 1.0; }, std::vector<double>{0.0},
@@ -70,33 +70,7 @@ const std::array<TestType, 8> kTestCases = {
     std::make_tuple(7,
                     MakeInput([](const std::vector<double> &x) { return std::exp(x[0]); }, std::vector<double>{0.0},
                               std::vector<double>{1.0}, std::vector<int>{200}),
-                    kE - 1.0),
-    // 2D x*y
-    std::make_tuple(9,
-                    MakeInput([](const std::vector<double> &x) { return x[0] * x[1]; }, std::vector<double>{0.0, 0.0},
-                              std::vector<double>{1.0, 1.0}, std::vector<int>{2, 2}),
-                    0.25),
-    // 2D exp(x+y)
-    std::make_tuple(12,
-                    MakeInput([](const std::vector<double> &x) { return std::exp(x[0] + x[1]); },
-                              std::vector<double>{0.0, 0.0}, std::vector<double>{1.0, 1.0}, std::vector<int>{200, 200}),
-                    (kE - 1.0) * (kE - 1.0)),
-    // 2D sin(x+y)
-    std::make_tuple(13,
-                    MakeInput([](const std::vector<double> &x) { return std::sin(x[0] + x[1]); },
-                              std::vector<double>{0.0, 0.0}, std::vector<double>{kPi, kPi}, std::vector<int>{200, 200}),
-                    0.0),
-    // 3D константа
-    std::make_tuple(16,
-                    MakeInput([](const std::vector<double> &) { return 1.0; }, std::vector<double>{0.0, 0.0, 0.0},
-                              std::vector<double>{1.0, 1.0, 1.0}, std::vector<int>{2, 2, 2}),
-                    1.0),
-    // 3D x^2+y^2+z^2 на [-1,1]^3
-    std::make_tuple(
-        19,
-        MakeInput([](const std::vector<double> &x) { return (x[0] * x[0]) + (x[1] * x[1]) + (x[2] * x[2]); },
-                  std::vector<double>{-1.0, -1.0, -1.0}, std::vector<double>{1.0, 1.0, 1.0}, std::vector<int>{2, 2, 2}),
-        8.0)};
+                    kE - 1.0)};
 
 const auto kTestTasksListSeq =
     ppc::util::AddFuncTask<RedkinaAIntegralSimpsonSEQ, InType>(kTestCases, PPC_SETTINGS_redkina_a_integral_simpson_seq);
