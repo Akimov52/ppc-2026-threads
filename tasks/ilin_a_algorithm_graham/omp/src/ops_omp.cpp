@@ -24,7 +24,7 @@ double DistanceSq(const Point &p, const Point &q) {
 Point FindLowestLeftmost(const std::vector<Point> &points) {
   Point p0 = points[0];
 
-#pragma omp parallel
+#pragma omp parallel default(none) shared(points, p0)
   {
     Point local_p0 = p0;
 #pragma omp for nowait
@@ -91,7 +91,7 @@ bool IlinAGrahamOMP::RunImpl() {
     }
   }
 
-  std::sort(sorted.begin(), sorted.end(), PointComparator(p0));
+  std::ranges::sort(sorted, PointComparator(p0));
 
   std::vector<Point> stack;
   stack.reserve(sorted.size() + 1);
