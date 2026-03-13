@@ -116,96 +116,54 @@ bool IsNonZero(const Complex &val) {
 }  // namespace
 
 bool BarkalovaMMultMatrixCcsOMP::RunImpl() {
-  const auto &input = GetInput();  // Получаем входные данные как одно целое
-  const auto &a = input.first;     // Явно извлекаем первую матрицу
-  const auto &b = input.second;    // Явно извлекаем вторую матрицу
+  const auto &[a, b] = GetInput();
 
   try {
-    CCSMatrix c;
     CCSMatrix at;
     TransponirMatr(a, at);
 
+    CCSMatrix c;
     c.rows = a.rows;
     c.cols = b.cols;
 
     int num_threads = omp_get_max_threads();
-    std::vector<ThreadData> thread_data(num_threads);
 
-#pragma omp parallel
-    {
-      int tid = omp_get_thread_num();
-      ThreadData &local = thread_data[tid];
+    std::vector<std::vector<int>> col_rows(c.cols);
+    std::vector<std::vector<Complex>> col_vals(c.cols);
 
-      std::vector<Complex> local_values;
-      std::vector<int> local_rows;
-      std::vector<int> boundaries(c.cols + 1, 0);
+#pragma omp parallel for num_threads(num_threads) schedule(static)
+    for (int j = 0; j < c.cols; j++) {
+      std::vector<int> rows;
+      std::vector<Complex> vals;
 
-#pragma omp for schedule(dynamic)
-      for (int j = 0; j < c.cols; j++) {
-        for (int i = 0; i < at.cols; i++) {
-          Complex sum = ComputeScalarProduct(at, b, i, j);
-          if (IsNonZero(sum)) {
-            local_values.push_back(sum);
-            local_rows.push_back(i);
-          }
-        }
-        boundaries[j + 1] = local_values.size();
-      }
-
-      for (int j = 1; j <= c.cols; j++) {
-        if (boundaries[j] == 0) {
-          boundaries[j] = boundaries[j - 1];
+      for (int i = 0; i < at.cols; i++) {
+        Complex sum = ComputeScalarProduct(at, b, i, j);
+        if (IsNonZero(sum)) {
+          rows.push_back(i);
+          vals.push_back(sum);
         }
       }
 
-      local.values = std::move(local_values);
-      local.rows = std::move(local_rows);
-      local.col_boundaries = std::move(boundaries);
+      col_rows[j] = std::move(rows);
+      col_vals[j] = std::move(vals);
     }
 
-    std::vector<int> col_ptrs(c.cols + 1, 0);
-
-    for (int t = 0; t < num_threads; t++) {
-      const auto &boundaries = thread_data[t].col_boundaries;
-      for (int j = 0; j < c.cols; j++) {
-        col_ptrs[j + 1] += boundaries[j + 1] - boundaries[j];
-      }
-    }
-
-    for (int j = 1; j <= c.cols; j++) {
-      col_ptrs[j] += col_ptrs[j - 1];
-    }
-
-    int total_nnz = col_ptrs[c.cols];
-
-    std::vector<Complex> values(total_nnz);
-    std::vector<int> rows(total_nnz);
-
-    std::vector<int> thread_pos(num_threads, 0);
+    std::vector<int> col_ptrs = {0};
+    std::vector<int> row_indices;
+    std::vector<Complex> values;
 
     for (int j = 0; j < c.cols; j++) {
-      int write_pos = col_ptrs[j];
-      for (int t = 0; t < num_threads; t++) {
-        int start_idx = thread_data[t].col_boundaries[j];
-        int end_idx = thread_data[t].col_boundaries[j + 1];
-        int count = end_idx - start_idx;
-        if (count > 0) {
-          if (start_idx + count <= static_cast<int>(thread_data[t].values.size()) &&
-              start_idx + count <= static_cast<int>(thread_data[t].rows.size())) {
-            std::copy(thread_data[t].values.begin() + start_idx, thread_data[t].values.begin() + end_idx,
-                      values.begin() + write_pos);
-            std::copy(thread_data[t].rows.begin() + start_idx, thread_data[t].rows.begin() + end_idx,
-                      rows.begin() + write_pos);
-            write_pos += count;
-          }
-        }
+      for (size_t idx = 0; idx < col_rows[j].size(); idx++) {
+        row_indices.push_back(col_rows[j][idx]);
+        values.push_back(col_vals[j][idx]);
       }
+      col_ptrs.push_back(static_cast<int>(values.size()));
     }
 
     c.values = std::move(values);
-    c.row_indices = std::move(rows);
+    c.row_indices = std::move(row_indices);
     c.col_ptrs = std::move(col_ptrs);
-    c.nnz = total_nnz;
+    c.nnz = static_cast<int>(c.values.size());
 
     GetOutput() = c;
     return true;
