@@ -45,7 +45,7 @@ bool KolotukhinAGaussinBlureOMP::RunImpl() {
 
   auto &output = GetOutput();
 
-#pragma omp parallel for collapse(2) schedule(static)
+#pragma omp parallel for collapse(2) schedule(static) default(none) shared(pixel_data, img_width, img_height, output)
   for (int row = 0; row < img_height; row++) {
     for (int col = 0; col < img_width; col++) {
       int acc = 0;
