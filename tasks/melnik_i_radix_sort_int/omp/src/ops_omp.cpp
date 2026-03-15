@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <utility>
 #include <vector>
@@ -78,7 +79,7 @@ void MelnikIRadixSortIntOMP::ParallelCountingSort(OutType &data, int exp, int of
 
   for (int thr = 0; thr < num_threads; thr++) {
     for (int buck = 0; buck < kBuckets; buck++) {
-      global_count.at(buck) += local_counts.at(static_cast<std::size_t>(thr) * static_cast<std::size_t>(kBuckets) +
+      global_count.at(buck) += local_counts.at((static_cast<std::size_t>(thr) * static_cast<std::size_t>(kBuckets)) +
                                                static_cast<std::size_t>(buck));
     }
   }
@@ -102,7 +103,7 @@ void MelnikIRadixSortIntOMP::ParallelCountingSort(OutType &data, int exp, int of
     for (int buck = 0; buck < kBuckets; buck++) {
       int base = start_pos.at(static_cast<std::size_t>(buck));
       for (int t2 = 0; t2 < thread_id; t2++) {
-        base += local_counts.at(static_cast<std::size_t>(t2) * static_cast<std::size_t>(kBuckets) +
+        base += local_counts.at((static_cast<std::size_t>(t2) * static_cast<std::size_t>(kBuckets)) +
                                 static_cast<std::size_t>(buck));
       }
       local_pos.at(static_cast<std::size_t>(buck)) = base;
