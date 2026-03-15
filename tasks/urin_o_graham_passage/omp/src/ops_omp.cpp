@@ -56,9 +56,10 @@ Point UrinOGrahamPassageOMP::FindLowestPoint(const InType &points) {
 
 Point UrinOGrahamPassageOMP::FindLowestPointParallel(const InType &points) {
   int lowest_index = 0;
+  int n = static_cast<int>(points.size());  // Сохраняем размер в int
 
-#pragma omp parallel for default(none) shared(points, lowest_index)
-  for (int i = 1; static_cast<size_t>(i) < points.size(); ++i) {
+#pragma omp parallel for default(none) shared(points, lowest_index, n)
+  for (int i = 1; i < n; ++i) {  // Простое сравнение
 #pragma omp critical
     {
       if (points[i].y < points[lowest_index].y - 1e-10 ||
@@ -125,13 +126,15 @@ std::vector<Point> UrinOGrahamPassageOMP::PrepareOtherPointsParallel(const InTyp
   other_points.reserve(points.size() - 1);
 
 #ifdef _OPENMP
-#  pragma omp parallel default(none) shared(points, p0, other_points)
+  int n = static_cast<int>(points.size());  // Сохраняем размер в int
+
+#  pragma omp parallel default(none) shared(points, p0, other_points, n)
   {
     std::vector<Point> local_points;
-    local_points.reserve((points.size() / omp_get_num_threads()) + 1);  // Исправлено
+    local_points.reserve((n / omp_get_num_threads()) + 1);
 
 #  pragma omp for nowait
-    for (int i = 0; static_cast<size_t>(i) < points.size(); ++i) {  // Исправлено
+    for (int i = 0; i < n; ++i) {  // Простое сравнение
       if (points[i] != p0) {
         local_points.push_back(points[i]);
       }
@@ -150,7 +153,7 @@ std::vector<Point> UrinOGrahamPassageOMP::PrepareOtherPointsParallel(const InTyp
   }
 #endif
 
-  std::ranges::sort(other_points, [&p0](const Point &a, const Point &b) {  // Исправлено
+  std::sort(other_points.begin(), other_points.end(), [&p0](const Point &a, const Point &b) {
     double angle_a = PolarAngle(p0, a);
     double angle_b = PolarAngle(p0, b);
 
@@ -165,9 +168,10 @@ std::vector<Point> UrinOGrahamPassageOMP::PrepareOtherPointsParallel(const InTyp
 
 bool UrinOGrahamPassageOMP::AreAllCollinear(const Point &p0, const std::vector<Point> &points) {
   bool all_collinear = true;
+  int n = static_cast<int>(points.size());  // Сохраняем размер в int
 
-#pragma omp parallel for default(none) shared(points, p0, all_collinear)
-  for (int i = 1; static_cast<size_t>(i) < points.size(); ++i) {
+#pragma omp parallel for default(none) shared(points, p0, all_collinear, n)
+  for (int i = 1; i < n; ++i) {  // Простое сравнение
     if (Orientation(p0, points[0], points[i]) != 0) {
 #pragma omp atomic write
       all_collinear = false;
