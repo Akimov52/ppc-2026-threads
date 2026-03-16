@@ -106,7 +106,7 @@ INSTANTIATE_TEST_SUITE_P(PicMatrixTests, IskhakovDVerticalGaussFilterFuncTests, 
 
 }  // namespace
 
-/****SEQ****/
+/*****SEQ*****/
 TEST(IskhakovDVerticalGaussFilterInvalidInputTest, ZeroSizes) {
   Matrix input;
   input.width = 0;
@@ -161,7 +161,7 @@ TEST(IskhakovDVerticalGaussFilterInvalidInputTest, NegativeHeight) {
   EXPECT_FALSE(task->Validation());
 }
 
-/****OMP****/
+/*****OMP*****/
 TEST(IskhakovDVerticalGaussFilterInvalidInputTest_OMP, ZeroSizes) {
   Matrix input{0, 0, {}};
   auto task = std::make_shared<IskhakovDVerticalGaussFilterOMP>(input);
