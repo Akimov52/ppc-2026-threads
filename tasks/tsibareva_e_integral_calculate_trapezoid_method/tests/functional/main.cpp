@@ -50,12 +50,12 @@ TEST_P(TsibarevaERunFuncTestsThreads, IntegralCalculation) {
 }
 
 const std::array<TestType, 6> kTestParams = {
-    std::make_tuple(IntegralTestType::kSuccessSimple2D, "2d_simple"),
-    std::make_tuple(IntegralTestType::kSuccessConstant2D, "2d_constant"),
-    std::make_tuple(IntegralTestType::kSuccessSimple3D, "3d_simple"),
-    std::make_tuple(IntegralTestType::kSuccessConstant3D, "3d_constant"),
-    std::make_tuple(IntegralTestType::kInvalidLowerBoundEqual, "invalid_lower_bound_equal"),
-    std::make_tuple(IntegralTestType::kInvalidEmptyBounds, "invalid_empty_bounds")};
+    std::make_tuple(IntegralTestType::kSuccessSimple2D, "2d_simple_lab2"),
+    std::make_tuple(IntegralTestType::kSuccessConstant2D, "2d_constant_lab2"),
+    std::make_tuple(IntegralTestType::kSuccessSimple3D, "3d_simple_lab2"),
+    std::make_tuple(IntegralTestType::kSuccessConstant3D, "3d_constant_lab2"),
+    std::make_tuple(IntegralTestType::kInvalidLowerBoundEqual, "invalid_lower_bound_equal_lab2"),
+    std::make_tuple(IntegralTestType::kInvalidEmptyBounds, "invalid_empty_bounds_lab2")};
 
 const auto kTestTasksList =
     std::tuple_cat(ppc::util::AddFuncTask<TsibarevaEIntegralCalculateTrapezoidMethodSEQ, InType>(
