@@ -7,6 +7,7 @@
 #include <functional>
 #include <numbers>
 #include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -52,8 +53,8 @@ TEST_P(VinyaikinaESimpsonFuncTests, Run) {
 
 double CountNDimArea(const std::vector<std::pair<double, double>> &borders) {
   double area = 1.0;
-  for (size_t i = 0; i < borders.size(); i++) {
-    area *= (borders[i].second - borders[i].first);
+  for (const auto &border : borders) {
+    area *= (border[i].second - border[i].first);
   }
   return area;
 }
@@ -176,6 +177,7 @@ const auto kTestTasksList =
 const auto kGtestValues = ppc::util::ExpandToValues(kTestTasksList);
 
 const auto kFuncTestName = VinyaikinaESimpsonFuncTests::PrintFuncTestName<VinyaikinaESimpsonFuncTests>;
+;
 
 INSTANTIATE_TEST_SUITE_P(MultidinIntegralsSimpsonTests, VinyaikinaESimpsonFuncTests, kGtestValues, kFuncTestName);
 

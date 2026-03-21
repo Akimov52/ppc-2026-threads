@@ -39,9 +39,9 @@ double Weight(int i, int steps_count) {
   return weight;
 }
 
-double СountIntegral(double left_border, double right_border, double simpson_factor,
-                     const std::vector<std::pair<double, double>> &limits, const std::vector<double> &actual_step,
-                     const std::function<double(const std::vector<double> &)> &function) {
+double OuntNtIntegral(double left_border, double right_border, double simpson_factor,
+                      const std::vector<std::pair<double, double>> &limits, const std::vector<double> &actual_step,
+                      const std::function<double(const std::vector<double> &)> &function) {
   std::stack<std::pair<std::vector<double>, double>> stack;
   double res = 0.0;
 
@@ -133,7 +133,7 @@ bool VinyaikinaEMultidimIntegrSimpsonOMP::RunImpl() {
       right_border = CustomRound(limits[0].second - (delta * (num_threads - omp_get_thread_num() - 1)), actual_step[0]);
     }
 
-    res += СountIntegral(left_border, right_border, simpson_factor, limits, actual_step, function);
+    res += OuntNtIntegral(left_border, right_border, simpson_factor, limits, actual_step, function);
   }
 
   I_res_ = res;

@@ -13,9 +13,9 @@
 namespace vinyaikina_e_multidimensional_integrals_simpson_method {
 namespace {
 
-double СountIntegral(double simpson_factor, const std::vector<std::pair<double, double>> &limits,
-                     std::vector<double> &actual_step,
-                     const std::function<double(const std::vector<double> &)> &function) {
+double OuntNtIntegral(double simpson_factor, const std::vector<std::pair<double, double>> &limits,
+                      std::vector<double> &actual_step,
+                      const std::function<double(const std::vector<double> &)> &function) {
   std::stack<std::pair<std::vector<double>, double>> stack;
   stack.emplace(std::vector<double>(), 1.0);
 
@@ -85,7 +85,7 @@ bool VinyaikinaEMultidimIntegrSimpsonSEQ::RunImpl() {
     simpson_factor *= actual_step[i] / 3.0;
   }
 
-  I_res_ = СountIntegral(simpson_factor, limits, actual_step, function);
+  I_res_ = OuntNtIntegral(simpson_factor, limits, actual_step, function);
 
   return true;
 }

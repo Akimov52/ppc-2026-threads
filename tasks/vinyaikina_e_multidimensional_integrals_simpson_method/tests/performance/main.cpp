@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <utility>
+#include <vector>
 
 #include "util/include/perf_test_util.hpp"
 #include "vinyaikina_e_multidimensional_integrals_simpson_method/common/include/common.hpp"
