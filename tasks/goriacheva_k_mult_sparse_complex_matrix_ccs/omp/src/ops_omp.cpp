@@ -1,5 +1,6 @@
 #include "goriacheva_k_mult_sparse_complex_matrix_ccs/omp/include/ops_omp.hpp"
 
+#include <algorithm>
 #include <ranges>
 #include <vector>
 
@@ -31,8 +32,9 @@ bool GoriachevaKMultSparseComplexMatrixCcsOMP::PreProcessingImpl() {
   return true;
 }
 
-static void ProcessColumn(int j, const SparseMatrixCCS &a, const SparseMatrixCCS &b, std::vector<Complex> &values,
-                          std::vector<int> &rows) {
+namespace {
+void ProcessColumn(int j, const SparseMatrixCCS &a, const SparseMatrixCCS &b, std::vector<Complex> &values,
+                   std::vector<int> &rows) {
   std::vector<Complex> accumulator(a.rows);
   std::vector<int> marker(a.rows, -1);
   std::vector<int> used_rows;
@@ -54,7 +56,7 @@ static void ProcessColumn(int j, const SparseMatrixCCS &a, const SparseMatrixCCS
     }
   }
 
-  std::ranges::sort(used_rows);
+  std::sort(used_rows.begin(), used_rows.end());
 
   for (int r : used_rows) {
     if (accumulator[r] != Complex(0.0, 0.0)) {
@@ -63,6 +65,7 @@ static void ProcessColumn(int j, const SparseMatrixCCS &a, const SparseMatrixCCS
     }
   }
 }
+}  // namespace
 
 bool GoriachevaKMultSparseComplexMatrixCcsOMP::RunImpl() {
   auto &a = std::get<0>(GetInput());
