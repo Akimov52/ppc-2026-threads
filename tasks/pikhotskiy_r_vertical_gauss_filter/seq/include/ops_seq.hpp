@@ -4,7 +4,6 @@
 #include <vector>
 
 #include "pikhotskiy_r_vertical_gauss_filter/common/include/common.hpp"
-#include "task/include/task.hpp"
 
 namespace pikhotskiy_r_vertical_gauss_filter {
 
@@ -20,6 +19,8 @@ class PikhotskiyRVerticalGaussFilterSEQ : public BaseTask {
   bool PreProcessingImpl() override;
   bool RunImpl() override;
   bool PostProcessingImpl() override;
+  void RunVerticalPassForStripe(int x_begin, int x_end);
+  void RunHorizontalPassForStripe(int x_begin, int x_end);
 
   int width_ = 0;
   int height_ = 0;

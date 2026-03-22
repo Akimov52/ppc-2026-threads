@@ -3,10 +3,6 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
-#include <utility>
-#include <vector>
-
-#include "pikhotskiy_r_vertical_gauss_filter/common/include/common.hpp"
 
 namespace pikhotskiy_r_vertical_gauss_filter {
 
@@ -14,7 +10,10 @@ namespace {
 constexpr int kKernelNorm = 16;
 constexpr int kStripeDivider = 8;
 
-int ClampIndex(int value, int upper_bound) {
+constexpr int ClampIndex(int value, int upper_bound) noexcept {
+  if (upper_bound <= 0) {
+    return 0;
+  }
   if (value < 0) {
     return 0;
   }
@@ -24,7 +23,7 @@ int ClampIndex(int value, int upper_bound) {
   return value;
 }
 
-std::size_t ToLinearIndex(int x, int y, int width) {
+constexpr std::size_t ToLinearIndex(int x, int y, int width) noexcept {
   return (static_cast<std::size_t>(y) * static_cast<std::size_t>(width)) + static_cast<std::size_t>(x);
 }
 
@@ -65,39 +64,20 @@ bool PikhotskiyRVerticalGaussFilterSEQ::PreProcessingImpl() {
 }
 
 bool PikhotskiyRVerticalGaussFilterSEQ::RunImpl() {
-  if (source_.empty() || vertical_buffer_.size() != source_.size() || result_buffer_.size() != source_.size()) {
+  const auto expected_size = static_cast<std::size_t>(width_) * static_cast<std::size_t>(height_);
+  if (width_ <= 0 || height_ <= 0 || source_.size() != expected_size || vertical_buffer_.size() != expected_size ||
+      result_buffer_.size() != expected_size) {
     return false;
   }
 
   for (int x_begin = 0; x_begin < width_; x_begin += stripe_width_) {
     const int x_end = std::min(width_, x_begin + stripe_width_);
-    for (int y = 0; y < height_; ++y) {
-      const int y_top = ClampIndex(y - 1, height_);
-      const int y_bottom = ClampIndex(y + 1, height_);
-
-      for (int x = x_begin; x < x_end; ++x) {
-        const std::size_t center = ToLinearIndex(x, y, width_);
-        const std::size_t top = ToLinearIndex(x, y_top, width_);
-        const std::size_t bottom = ToLinearIndex(x, y_bottom, width_);
-        vertical_buffer_[center] = static_cast<int>(source_[top]) + (2 * static_cast<int>(source_[center])) +
-                                   static_cast<int>(source_[bottom]);
-      }
-    }
+    RunVerticalPassForStripe(x_begin, x_end);
   }
 
   for (int x_begin = 0; x_begin < width_; x_begin += stripe_width_) {
     const int x_end = std::min(width_, x_begin + stripe_width_);
-    for (int y = 0; y < height_; ++y) {
-      for (int x = x_begin; x < x_end; ++x) {
-        const int x_left = ClampIndex(x - 1, width_);
-        const int x_right = ClampIndex(x + 1, width_);
-        const std::size_t center = ToLinearIndex(x, y, width_);
-        const std::size_t left = ToLinearIndex(x_left, y, width_);
-        const std::size_t right = ToLinearIndex(x_right, y, width_);
-        const int weighted_sum = vertical_buffer_[left] + (2 * vertical_buffer_[center]) + vertical_buffer_[right];
-        result_buffer_[center] = NormalizeAndRoundUp(weighted_sum);
-      }
-    }
+    RunHorizontalPassForStripe(x_begin, x_end);
   }
 
   return true;
@@ -106,8 +86,37 @@ bool PikhotskiyRVerticalGaussFilterSEQ::RunImpl() {
 bool PikhotskiyRVerticalGaussFilterSEQ::PostProcessingImpl() {
   GetOutput().width = width_;
   GetOutput().height = height_;
-  GetOutput().data = std::move(result_buffer_);
+  GetOutput().data = result_buffer_;
   return true;
+}
+
+void PikhotskiyRVerticalGaussFilterSEQ::RunVerticalPassForStripe(int x_begin, int x_end) {
+  for (int y = 0; y < height_; ++y) {
+    const int y_top = ClampIndex(y - 1, height_);
+    const int y_bottom = ClampIndex(y + 1, height_);
+
+    for (int x = x_begin; x < x_end; ++x) {
+      const std::size_t center = ToLinearIndex(x, y, width_);
+      const std::size_t top = ToLinearIndex(x, y_top, width_);
+      const std::size_t bottom = ToLinearIndex(x, y_bottom, width_);
+      vertical_buffer_[center] =
+          static_cast<int>(source_[top]) + (2 * static_cast<int>(source_[center])) + static_cast<int>(source_[bottom]);
+    }
+  }
+}
+
+void PikhotskiyRVerticalGaussFilterSEQ::RunHorizontalPassForStripe(int x_begin, int x_end) {
+  for (int y = 0; y < height_; ++y) {
+    for (int x = x_begin; x < x_end; ++x) {
+      const int x_left = ClampIndex(x - 1, width_);
+      const int x_right = ClampIndex(x + 1, width_);
+      const std::size_t center = ToLinearIndex(x, y, width_);
+      const std::size_t left = ToLinearIndex(x_left, y, width_);
+      const std::size_t right = ToLinearIndex(x_right, y, width_);
+      const int weighted_sum = vertical_buffer_[left] + (2 * vertical_buffer_[center]) + vertical_buffer_[right];
+      result_buffer_[center] = NormalizeAndRoundUp(weighted_sum);
+    }
+  }
 }
 
 }  // namespace pikhotskiy_r_vertical_gauss_filter
