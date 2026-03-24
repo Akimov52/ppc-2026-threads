@@ -1,7 +1,5 @@
 #include "morozova_s_strassen_multiplication/omp/include/ops_omp.hpp"
 
-#include <omp.h>
-
 #include <cmath>
 #include <cstddef>
 #include <vector>
@@ -16,15 +14,9 @@ Matrix AddMatrixImpl(const Matrix &a, const Matrix &b) {
   int n = a.size;
   Matrix result(n);
 
-#pragma omp parallel
-  {
-    int thread_id = omp_get_thread_num();
-    int num_threads = omp_get_num_threads();
-
-    for (int i = thread_id; i < n; i += num_threads) {
-      for (int j = 0; j < n; ++j) {
-        result(i, j) = a(i, j) + b(i, j);
-      }
+  for (int i = 0; i < n; ++i) {
+    for (int j = 0; j < n; ++j) {
+      result(i, j) = a(i, j) + b(i, j);
     }
   }
 
@@ -35,15 +27,9 @@ Matrix SubtractMatrixImpl(const Matrix &a, const Matrix &b) {
   int n = a.size;
   Matrix result(n);
 
-#pragma omp parallel
-  {
-    int thread_id = omp_get_thread_num();
-    int num_threads = omp_get_num_threads();
-
-    for (int i = thread_id; i < n; i += num_threads) {
-      for (int j = 0; j < n; ++j) {
-        result(i, j) = a(i, j) - b(i, j);
-      }
+  for (int i = 0; i < n; ++i) {
+    for (int j = 0; j < n; ++j) {
+      result(i, j) = a(i, j) - b(i, j);
     }
   }
 
@@ -54,19 +40,13 @@ Matrix MultiplyStandardImpl(const Matrix &a, const Matrix &b) {
   int n = a.size;
   Matrix result(n);
 
-#pragma omp parallel
-  {
-    int thread_id = omp_get_thread_num();
-    int num_threads = omp_get_num_threads();
-
-    for (int i = thread_id; i < n; i += num_threads) {
-      for (int j = 0; j < n; ++j) {
-        double sum = 0.0;
-        for (int k = 0; k < n; ++k) {
-          sum += a(i, k) * b(k, j);
-        }
-        result(i, j) = sum;
+  for (int i = 0; i < n; ++i) {
+    for (int j = 0; j < n; ++j) {
+      double sum = 0.0;
+      for (int k = 0; k < n; ++k) {
+        sum += a(i, k) * b(k, j);
       }
+      result(i, j) = sum;
     }
   }
 
@@ -92,18 +72,12 @@ Matrix MergeMatricesImpl(const Matrix &m11, const Matrix &m12, const Matrix &m21
   int n = 2 * half;
   Matrix result(n);
 
-#pragma omp parallel
-  {
-    int thread_id = omp_get_thread_num();
-    int num_threads = omp_get_num_threads();
-
-    for (int i = thread_id; i < half; i += num_threads) {
-      for (int j = 0; j < half; ++j) {
-        result(i, j) = m11(i, j);
-        result(i, j + half) = m12(i, j);
-        result(i + half, j) = m21(i, j);
-        result(i + half, j + half) = m22(i, j);
-      }
+  for (int i = 0; i < half; ++i) {
+    for (int j = 0; j < half; ++j) {
+      result(i, j) = m11(i, j);
+      result(i, j + half) = m12(i, j);
+      result(i + half, j) = m21(i, j);
+      result(i + half, j + half) = m22(i, j);
     }
   }
 
@@ -114,19 +88,13 @@ Matrix MultiplyStandardParallelImpl(const Matrix &a, const Matrix &b) {
   int n = a.size;
   Matrix result(n);
 
-#pragma omp parallel
-  {
-    int thread_id = omp_get_thread_num();
-    int num_threads = omp_get_num_threads();
-
-    for (int i = thread_id; i < n; i += num_threads) {
-      for (int j = 0; j < n; ++j) {
-        double sum = 0.0;
-        for (int k = 0; k < n; ++k) {
-          sum += a(i, k) * b(k, j);
-        }
-        result(i, j) = sum;
+  for (int i = 0; i < n; ++i) {
+    for (int j = 0; j < n; ++j) {
+      double sum = 0.0;
+      for (int k = 0; k < n; ++k) {
+        sum += a(i, k) * b(k, j);
       }
+      result(i, j) = sum;
     }
   }
 
