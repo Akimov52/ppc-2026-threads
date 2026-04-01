@@ -10,6 +10,7 @@
 #include "vinyaikina_e_multidimensional_integrals_simpson_method/common/include/common.hpp"
 #include "vinyaikina_e_multidimensional_integrals_simpson_method/omp/include/ops_omp.hpp"
 #include "vinyaikina_e_multidimensional_integrals_simpson_method/seq/include/ops_seq.hpp"
+#include "vinyaikina_e_multidimensional_integrals_simpson_method/tbb/include/ops_tbb.hpp"
 
 namespace vinyaikina_e_multidimensional_integrals_simpson_method {
 class VinyaikinaESimpsonPerfTests : public ppc::util::BaseRunPerfTests<InType, OutType> {
@@ -42,8 +43,8 @@ namespace {
 const auto kPerfTaskName = PPC_SETTINGS_vinyaikina_e_multidimensional_integrals_simpson_method;
 
 const auto kAllPerfTasks =
-    ppc::util::MakeAllPerfTasks<InType, VinyaikinaEMultidimIntegrSimpsonSEQ, VinyaikinaEMultidimIntegrSimpsonOMP>(
-        kPerfTaskName);
+    ppc::util::MakeAllPerfTasks<InType, VinyaikinaEMultidimIntegrSimpsonSEQ, VinyaikinaEMultidimIntegrSimpsonOMP,
+                                VinyaikinaEMultidimIntegrSimpsonTBB>(kPerfTaskName);
 
 const auto kGtestValues = ppc::util::TupleToGTestValues(kAllPerfTasks);
 
