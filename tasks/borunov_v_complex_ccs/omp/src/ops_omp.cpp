@@ -49,8 +49,8 @@ bool BorunovVComplexCcsOMP::PreProcessingImpl() {
 namespace {
 
 void ProcessColumn(int j, const SparseMatrix &a, const SparseMatrix &b, int tid, int jstart,
-                   std::vector<std::complex<double>> &acc, std::vector<int> &marker,
-                   std::vector<int> &touched, std::vector<std::vector<std::complex<double>>> &t_values,
+                   std::vector<std::complex<double>> &acc, std::vector<int> &marker, std::vector<int> &touched,
+                   std::vector<std::vector<std::complex<double>>> &t_values,
                    std::vector<std::vector<int>> &t_row_indices, std::vector<std::vector<int>> &t_col_nnz) {
   touched.clear();
 
@@ -82,8 +82,7 @@ void ProcessColumn(int j, const SparseMatrix &a, const SparseMatrix &b, int tid,
 
 void MergeResults(int num_threads, int bc, SparseMatrix &c,
                   const std::vector<std::vector<std::complex<double>>> &t_values,
-                  const std::vector<std::vector<int>> &t_row_indices,
-                  const std::vector<std::vector<int>> &t_col_nnz) {
+                  const std::vector<std::vector<int>> &t_row_indices, const std::vector<std::vector<int>> &t_col_nnz) {
   for (int tid = 0; tid < num_threads; ++tid) {
     const int jstart = (tid * bc) / num_threads;
     const int jend = ((tid + 1) * bc) / num_threads;
