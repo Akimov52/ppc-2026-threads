@@ -4,8 +4,8 @@
 #include <omp.h>
 
 #include <algorithm>
-#include <numeric>
 #include <ranges>
+#include <utility>
 #include <vector>
 
 #include "goriacheva_k_mult_sparse_complex_matrix_ccs/common/include/common.hpp"
@@ -62,6 +62,45 @@ void ProcessColumn(int j, const SparseMatrixCCS &a, const SparseMatrixCCS &b, st
   }
 }
 
+void ComputeDispls(const std::vector<int> &recv_counts, std::vector<int> &displs, int &total_nnz) {
+  total_nnz = 0;
+  for (int i = 0; i < static_cast<int>(recv_counts.size()); i++) {
+    displs[i] = total_nnz;
+    total_nnz += recv_counts[i];
+  }
+}
+
+void BuildGlobalColPtr(int size, int cols_per_proc, int total_cols, const std::vector<int> &local_col_ptr,
+                       std::vector<int> &global_col_ptr, int rank, MPI_Comm comm) {
+  int offset = 0;
+  int global_col = 0;
+
+  for (int proc = 0; proc < size; proc++) {
+    int start = proc * cols_per_proc;
+    int end = std::min(start + cols_per_proc, total_cols);
+
+    int p_cols = 0;
+    if (start < end) {
+      p_cols = end - start;
+    }
+
+    std::vector<int> tmp_col_ptr(p_cols + 1);
+
+    if (rank == proc) {
+      tmp_col_ptr = local_col_ptr;
+    }
+
+    MPI_Bcast(tmp_col_ptr.data(), p_cols + 1, MPI_INT, proc, comm);
+
+    if (rank == 0) {
+      for (int j = 0; j < p_cols; j++) {
+        global_col_ptr[global_col++] = offset + tmp_col_ptr[j];
+      }
+      offset += tmp_col_ptr[p_cols];
+    }
+  }
+}
+
 }  // namespace
 
 bool GoriachevaKMultSparseComplexMatrixCcsALL::RunImpl() {
@@ -69,7 +108,9 @@ bool GoriachevaKMultSparseComplexMatrixCcsALL::RunImpl() {
   auto &b = std::get<1>(GetInput());
   auto &c = GetOutput();
 
-  int rank = 0, size = 1;
+  int rank = 0;
+  int size = 1;
+
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 
@@ -79,12 +120,15 @@ bool GoriachevaKMultSparseComplexMatrixCcsALL::RunImpl() {
   int cols_per_proc = (b.cols + size - 1) / size;
   int start = rank * cols_per_proc;
   int end = std::min(start + cols_per_proc, b.cols);
-  int local_cols = (start < end) ? (end - start) : 0;
+  int local_cols = 0;
+  if (start < end) {
+    local_cols = end - start;
+  }
 
   std::vector<std::vector<Complex>> local_values(local_cols);
   std::vector<std::vector<int>> local_rows(local_cols);
 
-#pragma omp parallel for
+#pragma omp parallel for default(none) shared(a, b, local_values, local_rows, start)
   for (int j = 0; j < local_cols; j++) {
     ProcessColumn(start + j, a, b, local_values[j], local_rows[j]);
   }
@@ -116,10 +160,7 @@ bool GoriachevaKMultSparseComplexMatrixCcsALL::RunImpl() {
   int total_nnz = 0;
 
   if (rank == 0) {
-    for (int i = 0; i < size; i++) {
-      displs[i] = total_nnz;
-      total_nnz += recv_counts[i];
-    }
+    ComputeDispls(recv_counts, displs, total_nnz);
   }
 
   std::vector<int> recv_counts_dbl(size);
@@ -150,29 +191,7 @@ bool GoriachevaKMultSparseComplexMatrixCcsALL::RunImpl() {
     c.col_ptr.resize(c.cols + 1);
   }
 
-  int offset = 0;
-  int global_col = 0;
-
-  for (int p = 0; p < size; p++) {
-    int p_start = p * cols_per_proc;
-    int p_end = std::min(p_start + cols_per_proc, b.cols);
-    int p_cols = (p_start < p_end) ? (p_end - p_start) : 0;
-
-    std::vector<int> tmp_col_ptr(p_cols + 1);
-
-    if (rank == p) {
-      tmp_col_ptr = local_col_ptr;
-    }
-
-    MPI_Bcast(tmp_col_ptr.data(), p_cols + 1, MPI_INT, p, MPI_COMM_WORLD);
-
-    if (rank == 0) {
-      for (int j = 0; j < p_cols; j++) {
-        c.col_ptr[global_col++] = offset + tmp_col_ptr[j];
-      }
-      offset += tmp_col_ptr[p_cols];
-    }
-  }
+  BuildGlobalColPtr(size, cols_per_proc, b.cols, local_col_ptr, c.col_ptr, rank, MPI_COMM_WORLD);
 
   if (rank == 0) {
     c.col_ptr[c.cols] = total_nnz;
