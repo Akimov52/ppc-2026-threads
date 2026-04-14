@@ -30,6 +30,7 @@ bool SinevAMultMatrixFoxAlgorithmTBB::PreProcessingImpl() {
   return true;
 }
 
+// Добавляем static к определениям
 void SinevAMultMatrixFoxAlgorithmTBB::SimpleMultiply(size_t n, const std::vector<double> &a,
                                                      const std::vector<double> &b, std::vector<double> &c) {
   tbb::parallel_for(tbb::blocked_range2d<size_t>(0, n, 0, n), [&](const tbb::blocked_range2d<size_t> &r) {
@@ -81,7 +82,6 @@ void SinevAMultMatrixFoxAlgorithmTBB::AssembleFromBlocks(const std::vector<doubl
   });
 }
 
-// Вынесем умножение блоков в отдельную функцию для уменьшения когнитивной сложности
 void SinevAMultMatrixFoxAlgorithmTBB::MultiplyBlocks(const std::vector<double> &blocks_a,
                                                      const std::vector<double> &blocks_b, std::vector<double> &blocks_c,
                                                      size_t bs, size_t a_off, size_t b_off, size_t c_off) {
