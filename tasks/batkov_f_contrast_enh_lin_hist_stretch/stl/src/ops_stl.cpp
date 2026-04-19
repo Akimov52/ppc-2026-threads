@@ -1,6 +1,7 @@
 #include "batkov_f_contrast_enh_lin_hist_stretch/stl/include/ops_stl.hpp"
 
 #include <algorithm>
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <limits>
@@ -31,10 +32,14 @@ std::pair<uint8_t, uint8_t> FindMinMaxParallel(const InType &input, size_t num_t
       const size_t end = (thread_index == num_threads - 1) ? n : begin + block;
 
       threads.emplace_back([&, thread_index, begin, end]() {
+        uint8_t local_min = std::numeric_limits<uint8_t>::max();
+        uint8_t local_max = std::numeric_limits<uint8_t>::min();
         for (size_t i = begin; i < end; ++i) {
-          mins[thread_index] = std::min(mins[thread_index], input[i]);
-          maxs[thread_index] = std::max(maxs[thread_index], input[i]);
+          local_min = std::min(local_min, input[i]);
+          local_max = std::max(local_max, input[i]);
         }
+        mins[thread_index] = local_min;
+        maxs[thread_index] = local_max;
       });
     }
 
@@ -55,7 +60,16 @@ std::pair<uint8_t, uint8_t> FindMinMax(const InType &input, size_t parallel_thre
   return FindMinMaxParallel(input, num_threads);
 }
 
-void ApplyStretchParallel(const InType &input, OutType &output, size_t num_threads, double a, double b) {
+std::array<uint8_t, 256> BuildStretchLut(float a, float b) {
+  std::array<uint8_t, 256> lut{};
+  for (size_t pixel = 0; pixel < 256; ++pixel) {
+    lut.at(pixel) = static_cast<uint8_t>(std::clamp((a * static_cast<float>(pixel)) + b, 0.0F, 255.0F));
+  }
+  return lut;
+}
+
+void ApplyStretchParallel(const InType &input, OutType &output, size_t num_threads,
+                          const std::array<uint8_t, 256> &lut) {
   const size_t n = input.size();
   const size_t block = n / num_threads;
 
@@ -68,7 +82,7 @@ void ApplyStretchParallel(const InType &input, OutType &output, size_t num_threa
 
     threads.emplace_back([&, begin, end]() {
       for (size_t i = begin; i < end; ++i) {
-        output[i] = static_cast<uint8_t>(std::clamp((a * static_cast<double>(input[i])) + b, 0.0, 255.0));
+        output[i] = lut.at(input[i]);
       }
     });
   }
@@ -110,9 +124,10 @@ bool BatkovFContrastEnhLinHistStretchSTL::RunImpl() {
     return true;
   }
 
-  const double a = 255.0 / static_cast<double>(max_el - min_el);
-  const double b = -a * static_cast<double>(min_el);
-  ApplyStretchParallel(input, output, num_threads, a, b);
+  const float a = 255.0F / static_cast<float>(max_el - min_el);
+  const float b = -a * static_cast<float>(min_el);
+  const auto lut = BuildStretchLut(a, b);
+  ApplyStretchParallel(input, output, num_threads, lut);
   return true;
 }
 
