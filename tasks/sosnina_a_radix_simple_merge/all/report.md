@@ -270,7 +270,8 @@ ParallelHypercubeMerge(merged, rank, size)   // обмены MPI + merge пар
 Bcast(data) на все ранги
 ```
 
-Переменные окружения: **`PPC_NUM_PROC`**, **`PPC_NUM_THREADS`** (и при необходимости `OMP_NUM_THREADS` для согласованности с раннером тестов).
+Переменные окружения: **`PPC_NUM_PROC`**, **`PPC_NUM_THREADS`** (и при необходимости
+`OMP_NUM_THREADS` для согласованности с раннером тестов).
 
 ## Окружение
 
@@ -365,4 +366,3 @@ Bcast(data) на все ранги
   [https://isocpp.org/](https://isocpp.org/) (разделы о многопоточности).
 
 [url-onetbb]: https://www.intel.com/content/www/us/en/developer/tools/oneapi/onetbb.html
-
