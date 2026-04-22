@@ -52,8 +52,7 @@ bool KolotukhinAGaussinBlureTBB::RunImpl() {
 
   tbb::parallel_for(0, img_height, [&](int y) {
     for (int x = 0; x < img_width; x++) {
-      int sum = GetPixel(temp, img_width, img_height, x, y - 1) +
-                2 * GetPixel(temp, img_width, img_height, x, y) +
+      int sum = GetPixel(temp, img_width, img_height, x, y - 1) + 2 * GetPixel(temp, img_width, img_height, x, y) +
                 GetPixel(temp, img_width, img_height, x, y + 1);
       output[y * img_width + x] = static_cast<std::uint8_t>(sum / 4);
     }
