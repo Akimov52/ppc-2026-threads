@@ -11,6 +11,7 @@ class ShvetsovaKMultMatrixComplexTBB : public BaseTask {
     return ppc::task::TypeOfTask::kTBB;
   }
   explicit ShvetsovaKMultMatrixComplexTBB(const InType &in);
+  struct MatrixCSS;
 
  private:
   bool ValidationImpl() override;
