@@ -5,8 +5,8 @@
 #include <thread>
 #include <vector>
 
-#include "zavyalov_a_complex_sparse_matrix_mult/common/include/common.hpp"
 #include "util/include/util.hpp"
+#include "zavyalov_a_complex_sparse_matrix_mult/common/include/common.hpp"
 
 namespace zavyalov_a_compl_sparse_matr_mult {
 
@@ -17,21 +17,38 @@ SparseMatrix ZavyalovAComplSparseMatrMultSTL::MultiplicateWithStl(const SparseMa
   }
 
   int num_threads = ppc::util::GetNumThreads();
+  size_t total = matr_a.Count();
 
   std::vector<std::map<std::pair<size_t, size_t>, Complex>> local_maps(num_threads);
 
-#pragma omp parallel for num_threads(num_threads) schedule(static) default(none) shared(matr_a, matr_b, local_maps)
-  for (size_t i = 0; i < matr_a.Count(); ++i) {
-    int tid = omp_get_thread_num();
-    size_t row_a = matr_a.row_ind[i];
-    size_t col_a = matr_a.col_ind[i];
-    Complex val_a = matr_a.val[i];
+  auto worker = [&](int tid, size_t start, size_t end) {
+    for (size_t i = start; i < end; ++i) {
+      size_t row_a = matr_a.row_ind[i];
+      size_t col_a = matr_a.col_ind[i];
+      Complex val_a = matr_a.val[i];
 
-    for (size_t j = 0; j < matr_b.Count(); ++j) {
-      if (col_a == matr_b.row_ind[j]) {
-        local_maps[tid][{row_a, matr_b.col_ind[j]}] += val_a * matr_b.val[j];
+      for (size_t j = 0; j < matr_b.Count(); ++j) {
+        if (col_a == matr_b.row_ind[j]) {
+          local_maps[tid][{row_a, matr_b.col_ind[j]}] += val_a * matr_b.val[j];
+        }
       }
     }
+  };
+
+  std::vector<std::thread> threads;
+  threads.reserve(num_threads);
+
+  size_t chunk = (total + num_threads - 1) / num_threads;
+  for (int t = 0; t < num_threads; ++t) {
+    size_t start = t * chunk;
+    size_t end = std::min(start + chunk, total);
+    if (start < total) {
+      threads.emplace_back(worker, t, start, end);
+    }
+  }
+
+  for (auto &th : threads) {
+    th.join();
   }
 
   std::map<std::pair<size_t, size_t>, Complex> mp;
