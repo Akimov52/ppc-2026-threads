@@ -1,5 +1,10 @@
 #pragma once
 
+#include <cstddef>
+#include <map>
+#include <utility>
+#include <vector>
+
 #include "task/include/task.hpp"
 #include "zavyalov_a_complex_sparse_matrix_mult/common/include/common.hpp"
 
