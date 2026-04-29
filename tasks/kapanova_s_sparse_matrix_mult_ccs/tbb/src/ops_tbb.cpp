@@ -5,6 +5,7 @@
 #include <tbb/parallel_for.h>
 
 #include <algorithm>
+#include <ranges>
 #include <vector>
 
 #include "kapanova_s_sparse_matrix_mult_ccs/common/include/common.hpp"
@@ -55,6 +56,10 @@ bool KapanovaSSparseMatrixMultCCSTBB::PreProcessingImpl() {
   return true;
 }
 
+bool KapanovaSSparseMatrixMultCCSTBB::PostProcessingImpl() {
+  return true;
+}
+
 namespace {
 
 struct ThreadLocalBuffers {
@@ -85,7 +90,7 @@ void ProcessColumnRange(const CCSMatrix &a, const CCSMatrix &b, std::vector<std:
       }
     }
 
-    std::sort(active_rows.begin(), active_rows.end());
+    std::ranges::sort(active_rows);
 
     for (size_t i : active_rows) {
       if (accum[i] != 0.0) {
@@ -158,10 +163,6 @@ bool KapanovaSSparseMatrixMultCCSTBB::RunImpl() {
   c.row_indices.resize(c.nnz);
   MergeResults(tls_data, c.cols, c);
 
-  return true;
-}
-
-bool KapanovaSSparseMatrixMultCCSTBB::PostProcessingImpl() {
   return true;
 }
 

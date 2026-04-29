@@ -1,7 +1,5 @@
 #pragma once
 
-#include <vector>
-
 #include "kapanova_s_sparse_matrix_mult_ccs/common/include/common.hpp"
 #include "task/include/task.hpp"
 
