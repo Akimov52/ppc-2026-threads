@@ -7,6 +7,7 @@
 #include "tsibareva_e_integral_calculate_trapezoid_method/omp/include/ops_omp.hpp"
 #include "tsibareva_e_integral_calculate_trapezoid_method/seq/include/ops_seq.hpp"
 #include "tsibareva_e_integral_calculate_trapezoid_method/tbb/include/ops_tbb.hpp"
+#include "tsibareva_e_integral_calculate_trapezoid_method/stl/include/ops_stl.hpp"
 #include "util/include/perf_test_util.hpp"
 
 namespace tsibareva_e_integral_calculate_trapezoid_method {
@@ -40,7 +41,8 @@ namespace {
 
 const auto kAllPerfTasks = ppc::util::MakeAllPerfTasks<Integral, TsibarevaEIntegralCalculateTrapezoidMethodSEQ,
                                                        TsibarevaEIntegralCalculateTrapezoidMethodOMP,
-                                                       TsibarevaEIntegralCalculateTrapezoidMethodTBB>(
+                                                       TsibarevaEIntegralCalculateTrapezoidMethodTBB,
+                                                       TsibarevaEIntegralCalculateTrapezoidMethodSTL>(
     PPC_SETTINGS_tsibareva_e_integral_calculate_trapezoid_method);
 
 const auto kGtestValues = ppc::util::TupleToGTestValues(kAllPerfTasks);
