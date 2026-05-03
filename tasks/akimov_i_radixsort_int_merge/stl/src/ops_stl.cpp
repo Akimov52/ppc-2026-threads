@@ -64,6 +64,29 @@ void RadixSortLocal(std::vector<int>::iterator begin, std::vector<int>::iterator
     }
   }
 }
+
+void MergeBlocks(std::vector<int> &arr, const std::vector<int> &offsets, int num_threads) {
+  for (int step = 1; step < num_threads; step *= 2) {
+    std::vector<std::thread> threads;
+    int reserve_size = (num_threads + (2 * step) - 1) / (2 * step);
+    threads.reserve(static_cast<size_t>(reserve_size));
+    for (int i = 0; i < num_threads; i += 2 * step) {
+      if (i + step < num_threads) {
+        threads.emplace_back([&arr, &offsets, i, step, num_threads]() {
+          auto begin = arr.begin() + offsets[i];
+          auto middle = arr.begin() + offsets[i + step];
+          int end_idx = std::min(i + (2 * step), num_threads);
+          auto end = arr.begin() + offsets[end_idx];
+          std::inplace_merge(begin, middle, end);
+        });
+      }
+    }
+    for (auto &t : threads) {
+      t.join();
+    }
+  }
+}
+
 }  // namespace
 
 AkimovIRadixSortIntMergeSTL::AkimovIRadixSortIntMergeSTL(const InType &in) {
@@ -110,7 +133,7 @@ bool AkimovIRadixSortIntMergeSTL::RunImpl() {
 
   {
     std::vector<std::thread> threads;
-    threads.reserve(num_threads);
+    threads.reserve(static_cast<size_t>(num_threads));
     for (int i = 0; i < num_threads; ++i) {
       threads.emplace_back([&arr, &offsets, i]() {
         auto begin = arr.begin() + offsets[i];
@@ -123,24 +146,7 @@ bool AkimovIRadixSortIntMergeSTL::RunImpl() {
     }
   }
 
-  for (int step = 1; step < num_threads; step *= 2) {
-    std::vector<std::thread> threads;
-    threads.reserve(num_threads / (2 * step) + 1);
-    for (int i = 0; i < num_threads; i += 2 * step) {
-      if (i + step < num_threads) {
-        threads.emplace_back([&arr, &offsets, i, step, num_threads]() {
-          auto begin = arr.begin() + offsets[i];
-          auto middle = arr.begin() + offsets[i + step];
-          int end_idx = std::min(i + (2 * step), num_threads);
-          auto end = arr.begin() + offsets[end_idx];
-          std::inplace_merge(begin, middle, end);
-        });
-      }
-    }
-    for (auto &t : threads) {
-      t.join();
-    }
-  }
+  MergeBlocks(arr, offsets, num_threads);
 
   return true;
 }
