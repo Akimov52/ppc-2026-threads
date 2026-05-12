@@ -1,8 +1,8 @@
 #include "akimov_i_radixsort_int_merge/all/include/ops_all.hpp"
 
 #include <mpi.h>
-#include <oneapi/tbb/parallel_for.h>
 #include <omp.h>
+#include <oneapi/tbb/parallel_for.h>
 
 #include <algorithm>
 #include <array>
@@ -10,10 +10,8 @@
 #include <cstdint>
 #include <iterator>
 #include <thread>
+#include <utility>
 #include <vector>
-
-#include "akimov_i_radixsort_int_merge/common/include/common.hpp"
-#include "util/include/util.hpp"
 
 namespace akimov_i_radixsort_int_merge {
 
@@ -55,7 +53,9 @@ void CountingSortStep(std::vector<int>::iterator in_begin, std::vector<int>::ite
 
 void RadixSortLocal(std::vector<int>::iterator begin, std::vector<int>::iterator end) {
   size_t n = std::distance(begin, end);
-  if (n < 2) return;
+  if (n < 2) {
+    return;
+  }
 
   std::vector<int> temp(n);
 
@@ -68,7 +68,7 @@ void RadixSortLocal(std::vector<int>::iterator begin, std::vector<int>::iterator
   }
 }
 
-void ParallelMerge(std::vector<int>& arr, const std::vector<int>& offsets, int num_blocks) {
+void ParallelMerge(std::vector<int> &arr, const std::vector<int> &offsets, int num_blocks) {
   for (int step = 1; step < num_blocks; step *= 2) {
     tbb::parallel_for(0, num_blocks, [&](int i) {
       if (i % (2 * step) == 0 && i + step < num_blocks) {
@@ -100,11 +100,14 @@ bool AkimovIRadixSortIntMergeALL::PreProcessingImpl() {
 }
 
 bool AkimovIRadixSortIntMergeALL::RunImpl() {
-  auto& arr = GetOutput();
+  auto &arr = GetOutput();
   int n = static_cast<int>(arr.size());
-  if (n == 0) return true;
+  if (n == 0) {
+    return true;
+  }
 
-  int rank = -1, world_size = -1;
+  int rank = -1;
+  int world_size = -1;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &world_size);
 
@@ -112,9 +115,6 @@ bool AkimovIRadixSortIntMergeALL::RunImpl() {
   std::vector<int> send_displs(world_size);
   int base = n / world_size;
   int remainder = n % world_size;
-
-  std::vector<int> recv_counts(world_size);
-  std::vector<int> recv_displs(world_size);
 
   int offset = 0;
   for (int i = 0; i < world_size; ++i) {
@@ -126,8 +126,8 @@ bool AkimovIRadixSortIntMergeALL::RunImpl() {
   int local_size = send_counts[rank];
   std::vector<int> local_data(local_size);
 
-  MPI_Scatterv(arr.data(), send_counts.data(), send_displs.data(), MPI_INT,
-               local_data.data(), local_size, MPI_INT, 0, MPI_COMM_WORLD);
+  MPI_Scatterv(arr.data(), send_counts.data(), send_displs.data(), MPI_INT, local_data.data(), local_size, MPI_INT, 0,
+               MPI_COMM_WORLD);
 
   constexpr int32_t kSignMask = INT32_MIN;
 #pragma omp parallel for default(none) shared(local_data, kSignMask, local_size)
@@ -143,27 +143,27 @@ bool AkimovIRadixSortIntMergeALL::RunImpl() {
   }
 
   std::vector<int> temp_copy(local_size);
-  std::vector<std::thread> stl_threads;
   int num_stl_threads = std::min(4, local_size);
   int chunk = (local_size + num_stl_threads - 1) / num_stl_threads;
-  for (int t = 0; t < num_stl_threads; ++t) {
-    int start = t * chunk;
+  std::vector<std::thread> stl_threads;
+  for (int thread_idx = 0; thread_idx < num_stl_threads; ++thread_idx) {
+    int start = thread_idx * chunk;
     int end = std::min(start + chunk, local_size);
     stl_threads.emplace_back([&local_data, &temp_copy, start, end]() {
       std::copy(local_data.begin() + start, local_data.begin() + end, temp_copy.begin() + start);
     });
   }
-  for (auto& th : stl_threads) th.join();
+  for (auto &th : stl_threads) {
+    th.join();
+  }
   local_data.swap(temp_copy);
 
   std::vector<int> global_data;
   if (rank == 0) {
     global_data.resize(n);
   }
-
-  MPI_Gatherv(local_data.data(), local_size, MPI_INT,
-              global_data.data(), send_counts.data(), send_displs.data(), MPI_INT,
-              0, MPI_COMM_WORLD);
+  MPI_Gatherv(local_data.data(), local_size, MPI_INT, global_data.data(), send_counts.data(), send_displs.data(),
+              MPI_INT, 0, MPI_COMM_WORLD);
 
   if (rank == 0) {
     std::vector<int> offsets(world_size + 1);
@@ -178,7 +178,6 @@ bool AkimovIRadixSortIntMergeALL::RunImpl() {
   }
 
   MPI_Barrier(MPI_COMM_WORLD);
-
   return true;
 }
 
