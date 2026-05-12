@@ -130,14 +130,14 @@ bool AkimovIRadixSortIntMergeALL::RunImpl() {
                local_data.data(), local_size, MPI_INT, 0, MPI_COMM_WORLD);
 
   constexpr int32_t kSignMask = INT32_MIN;
-#pragma omp parallel for default(none) shared(local_data, kSignMask)
+#pragma omp parallel for default(none) shared(local_data, kSignMask, local_size)
   for (int i = 0; i < local_size; ++i) {
     local_data[i] ^= kSignMask;
   }
 
   RadixSortLocal(local_data.begin(), local_data.end());
 
-#pragma omp parallel for default(none) shared(local_data, kSignMask)
+#pragma omp parallel for default(none) shared(local_data, kSignMask, local_size)
   for (int i = 0; i < local_size; ++i) {
     local_data[i] ^= kSignMask;
   }
