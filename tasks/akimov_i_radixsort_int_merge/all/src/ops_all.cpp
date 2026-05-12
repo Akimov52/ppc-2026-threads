@@ -170,11 +170,10 @@ bool AkimovIRadixSortIntMergeALL::RunImpl() {
   if (rank == 0) {
     std::vector<int> offsets(world_size + 1, 0);
     for (int i = 0; i < world_size; ++i) {
-        offsets[i + 1] = offsets[i] + send_counts[i];
+      offsets[i + 1] = offsets[i] + send_counts[i];
     }
     ParallelMerge(global_data, offsets, world_size);
     GetOutput() = std::move(global_data);
-}
   } else {
     GetOutput().clear();
   }
