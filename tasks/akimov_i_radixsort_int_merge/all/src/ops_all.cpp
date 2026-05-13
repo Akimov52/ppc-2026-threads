@@ -178,6 +178,13 @@ bool AkimovIRadixSortIntMergeALL::RunImpl() {
     GetOutput().clear();
   }
 
+  int output_size = static_cast<int>(GetOutput().size());
+  MPI_Bcast(&output_size, 1, MPI_INT, 0, MPI_COMM_WORLD);
+  if (rank != 0) {
+    GetOutput().resize(output_size);
+  }
+  MPI_Bcast(GetOutput().data(), output_size, MPI_INT, 0, MPI_COMM_WORLD);
+
   MPI_Barrier(MPI_COMM_WORLD);
   return true;
 }
