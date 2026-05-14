@@ -27,10 +27,6 @@ void CountingSortStep(std::vector<int>::iterator in_begin, std::vector<int>::ite
   for (auto it = in_begin; it != in_end; ++it) {
     auto raw_val = static_cast<unsigned int>(*it);
     unsigned int byte_val = (raw_val >> shift) & 0xFF;
-
-    if (byte_index == sizeof(int) - 1) {
-      byte_val ^= 128;
-    }
     count.at(byte_val)++;
   }
 
@@ -43,11 +39,6 @@ void CountingSortStep(std::vector<int>::iterator in_begin, std::vector<int>::ite
   for (auto it = in_begin; it != in_end; ++it) {
     auto raw_val = static_cast<unsigned int>(*it);
     unsigned int byte_val = (raw_val >> shift) & 0xFF;
-
-    if (byte_index == sizeof(int) - 1) {
-      byte_val ^= 128;
-    }
-
     *(out_begin + static_cast<int64_t>(prefix.at(byte_val))) = *it;
     prefix.at(byte_val)++;
   }
