@@ -20,15 +20,15 @@ namespace {
 void CountingSortStep(std::vector<int>::iterator in_begin, std::vector<int>::iterator in_end,
                       std::vector<int>::iterator out_begin, size_t byte_index) {
   size_t shift = byte_index * 8;
-  std::array<size_t, 256> count = {0};
+  std::vector<size_t> count(256, 0);
 
   for (auto it = in_begin; it != in_end; ++it) {
     auto raw_val = static_cast<uint32_t>(*it);
     uint32_t byte_val = (raw_val >> shift) & 0xFF;
-    count[byte_val]++;
+    ++count[byte_val];
   }
 
-  std::array<size_t, 256> prefix{};
+  std::vector<size_t> prefix(256, 0);
   prefix[0] = 0;
   for (int i = 1; i < 256; ++i) {
     prefix[i] = prefix[i - 1] + count[i - 1];
@@ -37,8 +37,8 @@ void CountingSortStep(std::vector<int>::iterator in_begin, std::vector<int>::ite
   for (auto it = in_begin; it != in_end; ++it) {
     auto raw_val = static_cast<uint32_t>(*it);
     uint32_t byte_val = (raw_val >> shift) & 0xFF;
-    *(out_begin + prefix[byte_val]) = *it;
-    prefix[byte_val]++;
+    *(out_begin + static_cast<std::ptrdiff_t>(prefix[byte_val])) = *it;
+    ++prefix[byte_val];
   }
 }
 
@@ -68,6 +68,49 @@ void ParallelMerge(std::vector<int> &arr, const std::vector<int> &offsets, int n
         std::inplace_merge(begin, middle, end);
       }
     });
+  }
+}
+
+void DistributeData(int rank, int world_size, int n, const std::vector<int> &input, std::vector<int> &local_data,
+                    std::vector<int> &send_counts, std::vector<int> &send_displs) {
+  send_counts.resize(world_size);
+  send_displs.resize(world_size);
+  int base = n / world_size;
+  int rem = n % world_size;
+  int offset = 0;
+  for (int i = 0; i < world_size; ++i) {
+    send_counts[i] = base + (i < rem ? 1 : 0);
+    send_displs[i] = offset;
+    offset += send_counts[i];
+  }
+
+  int local_size = send_counts[rank];
+  local_data.resize(local_size);
+
+  if (ppc::util::IsUnderMpirun()) {
+    MPI_Scatterv(rank == 0 ? input.data() : nullptr, send_counts.data(), send_displs.data(), MPI_INT, local_data.data(),
+                 local_size, MPI_INT, 0, MPI_COMM_WORLD);
+  } else {
+    local_data = input;
+  }
+}
+
+void GatherData(int rank, int n, const std::vector<int> &local_data, const std::vector<int> &send_counts,
+                const std::vector<int> &send_displs, std::vector<int> &output) {
+  if (ppc::util::IsUnderMpirun()) {
+    if (rank == 0) {
+      output.resize(n);
+    }
+    MPI_Gatherv(local_data.data(), static_cast<int>(local_data.size()), MPI_INT, rank == 0 ? output.data() : nullptr,
+                send_counts.data(), send_displs.data(), MPI_INT, 0, MPI_COMM_WORLD);
+  } else {
+    output = local_data;
+  }
+}
+
+void InvertSignBit(std::vector<int> &data, int32_t mask) {
+  for (int &val : data) {
+    val ^= mask;
   }
 }
 
@@ -117,47 +160,15 @@ bool AkimovIRadixSortIntMergeALL::RunImpl() {
     return true;
   }
 
-  std::vector<int> send_counts(world_size);
-  std::vector<int> send_displs(world_size);
-  int base = n / world_size;
-  int rem = n % world_size;
-  int offset = 0;
-  for (int i = 0; i < world_size; ++i) {
-    send_counts[i] = base + (i < rem ? 1 : 0);
-    send_displs[i] = offset;
-    offset += send_counts[i];
-  }
-
-  int local_size = send_counts[rank];
-  std::vector<int> local_data(local_size);
-
-  if (is_mpi) {
-    MPI_Scatterv(rank == 0 ? GetOutput().data() : nullptr, send_counts.data(), send_displs.data(), MPI_INT,
-                 local_data.data(), local_size, MPI_INT, 0, MPI_COMM_WORLD);
-  } else {
-    local_data = GetOutput();
-  }
+  std::vector<int> send_counts, send_displs, local_data;
+  DistributeData(rank, world_size, n, GetOutput(), local_data, send_counts, send_displs);
 
   constexpr int32_t kSignMask = INT32_MIN;
-  for (int i = 0; i < local_size; ++i) {
-    local_data[i] ^= kSignMask;
-  }
-
+  InvertSignBit(local_data, kSignMask);
   RadixSortLocal(local_data.begin(), local_data.end());
+  InvertSignBit(local_data, kSignMask);
 
-  for (int i = 0; i < local_size; ++i) {
-    local_data[i] ^= kSignMask;
-  }
-
-  if (is_mpi) {
-    if (rank == 0) {
-      GetOutput().resize(n);
-    }
-    MPI_Gatherv(local_data.data(), local_size, MPI_INT, rank == 0 ? GetOutput().data() : nullptr, send_counts.data(),
-                send_displs.data(), MPI_INT, 0, MPI_COMM_WORLD);
-  } else {
-    GetOutput() = local_data;
-  }
+  GatherData(rank, n, local_data, send_counts, send_displs, GetOutput());
 
   if (rank == 0 && world_size > 1) {
     std::vector<int> offsets(world_size + 1, 0);

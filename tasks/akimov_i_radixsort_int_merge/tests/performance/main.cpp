@@ -11,6 +11,7 @@
 #include "akimov_i_radixsort_int_merge/stl/include/ops_stl.hpp"
 #include "akimov_i_radixsort_int_merge/tbb/include/ops_tbb.hpp"
 #include "util/include/perf_test_util.hpp"
+#include "util/include/util.hpp"
 
 namespace akimov_i_radixsort_int_merge {
 
