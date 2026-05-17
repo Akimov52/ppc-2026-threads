@@ -1,6 +1,7 @@
 #include "akimov_i_radixsort_int_merge/all/include/ops_all.hpp"
 
 #include <mpi.h>
+#include <oneapi/tbb/parallel_for.h>
 
 #include <algorithm>
 #include <array>
@@ -59,15 +60,15 @@ void RadixSortLocal(std::vector<int>::iterator begin, std::vector<int>::iterator
 
 void ParallelMerge(std::vector<int> &arr, const std::vector<int> &offsets, int num_blocks) {
   for (int step = 1; step < num_blocks; step *= 2) {
-    for (int i = 0; i < num_blocks; i += 2 * step) {
-      if (i + step < num_blocks) {
+    tbb::parallel_for(0, num_blocks, [&, step](int i) {
+      if (i % (2 * step) == 0 && i + step < num_blocks) {
         auto begin = arr.begin() + offsets[i];
         auto middle = arr.begin() + offsets[i + step];
         int end_idx = std::min(i + (2 * step), num_blocks);
         auto end = arr.begin() + offsets[end_idx];
         std::inplace_merge(begin, middle, end);
       }
-    }
+    });
   }
 }
 
