@@ -4,7 +4,6 @@
 #include <oneapi/tbb/parallel_for.h>
 
 #include <algorithm>
-#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <iterator>
@@ -160,7 +159,9 @@ bool AkimovIRadixSortIntMergeALL::RunImpl() {
     return true;
   }
 
-  std::vector<int> send_counts, send_displs, local_data;
+  std::vector<int> send_counts;
+  std::vector<int> send_displs;
+  std::vector<int> local_data;
   DistributeData(rank, world_size, n, GetOutput(), local_data, send_counts, send_displs);
 
   constexpr int32_t kSignMask = INT32_MIN;
